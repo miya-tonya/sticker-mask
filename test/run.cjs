@@ -234,6 +234,30 @@ const server = http.createServer((req, res) => {
   await page.evaluate(() => document.getElementById("clearBtn").click()); await page.waitForTimeout(100);
   want((await st()).n === 0, "clear() removes everything");
 
+  // review follow-ups: a category literally named like the All tab, exit() during enter(), destroy() with the manager open
+  await page.evaluate(() => document.getElementById("maskBtn").click()); await page.waitForTimeout(300);
+  await page.evaluate(() => document.querySelector(".sm-settings").click()); await page.waitForTimeout(400);
+  await page.evaluate(() => document.querySelector(".sm-tab-add").click()); await page.waitForTimeout(200);
+  await page.evaluate(() => { const i = document.querySelector(".sm-prompt .sm-input"); i.value = "全部"; document.querySelector(".sm-prompt .sm-ok").click(); }); await page.waitForTimeout(400);
+  m = await mm(); want(m.active === "全部" && m.tiles === 0 && !m.delcatHidden && await page.evaluate(() => document.querySelectorAll(".sm-tab.sm-active").length === 1 && document.querySelector(".sm-tab.sm-active").dataset.cat === "全部"), "a category named 全部 is its own tab (empty, deletable), not the All tab " + JSON.stringify(m));
+  await page.evaluate(() => document.querySelector(".sm-tab-all").click()); await page.waitForTimeout(100);
+  m = await mm(); want(m.tiles === 3 && m.delcatHidden && m.active === "全部", "the real All tab still shows everything and hides delete-category");
+  await page.evaluate(() => document.querySelector('.sm-tab[data-cat="全部"]').click()); await page.waitForTimeout(100);
+  await page.evaluate(() => document.querySelector(".sm-delcat").click()); await page.waitForTimeout(200);
+  await page.evaluate(() => document.querySelector(".sm-confirm .sm-ok").click()); await page.waitForTimeout(400);
+  m = await mm(); want(m.tabs.join("|") === "全部|Tape|Star|+", "that category deleted again");
+  // destroy() while the manager is open: dialog gone, column gone, no stray sticker layers
+  await page.evaluate(() => { window.mask.destroy(); }); await page.waitForTimeout(200);
+  want(await page.evaluate(() => !document.querySelector(".sm-modal-mask") && !document.querySelector(".sm-side") && !document.querySelector(".sm-layer") && !document.getElementById("app").classList.contains("sm-editing")), "destroy() closes the manager and removes the column and layers");
+  // exit() right after enter(): the column must not reappear once the (async) list load completes
+  await page.evaluate(() => {
+    window.mask2 = StickerMask.create({ scroller: document.getElementById("messages"), host: document.getElementById("app"), listUrl: "stickers/list.json?slow=1" });
+    window.mask2.enter(); window.mask2.exit();
+  });
+  await page.waitForTimeout(800);
+  want(await page.evaluate(() => { const s = document.querySelector(".sm-side"); return !window.mask2.editing && (!s || s.hidden); }), "exit() during enter(): column stays hidden after the load finishes");
+  await page.evaluate(() => window.mask2.destroy());
+
   console.log(errors.length ? "FAILED: " + errors.length : "all passed");
   await browser.close();
   server.close();

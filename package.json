@@ -11,7 +11,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "test": "node test/run.cjs"
+    "test": "node test/run.cjs",
+    "test:router": "node test/router.cjs"
   },
   "keywords": [
     "sticker",
@@ -36,9 +37,15 @@
     "sharp": ">=0.30"
   },
   "peerDependenciesMeta": {
-    "express": { "optional": true },
-    "multer": { "optional": true },
-    "sharp": { "optional": true }
+    "express": {
+      "optional": true
+    },
+    "multer": {
+      "optional": true
+    },
+    "sharp": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "playwright": "^1.45.0"

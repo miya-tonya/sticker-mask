@@ -80,12 +80,16 @@ Drop stickers over the parts of a page you want hidden, then take a normal scree
 
 ```js
 const stickerRouter = require("sticker-mask/server/express-router");
-app.use("/api/stickers", stickerRouter({ dir: path.join(__dirname, "public/stickers") }));
+app.use("/api/stickers", requireLogin, stickerRouter({
+  dir: path.join(__dirname, "public/stickers"),       // 图片 + list.json，静态公开
+  dataDir: path.join(__dirname, "sticker-mask-data"), // 回收 + 归档，放在静态目录之外
+}));
 ```
 
-- 上传：裁透明边 → 最长边 800 → webp q85，**永远用新文件名**（改素材不换名会被浏览器和 Service Worker 的缓存咬住）。
-- 删除不真删，文件挪进回收目录；每次改 `list.json` 之前先存一份到归档目录。
-- 路由本身**不做鉴权**，前面请自己加。
+- 上传：裁透明边 → 最长边 800 → webp q85，文件名随机、独占创建，**永远是新文件**（改素材不换名会被浏览器和 Service Worker 的缓存咬住）。解码像素上限默认 4000 万（`maxPixels`）。
+- 删除不真删，文件挪进回收目录；每次改 `list.json` 之前先存一份到归档目录。`list.json` 存在但解析不了时拒绝写入（回 500），不会把坏文件当空清单覆盖掉。
+- 同一进程内的写入是排队的，而且每次写之前重新读清单，慢上传不会覆盖中途的改动。一个 `list.json` 只跑一个实例。
+- 路由本身**不做鉴权、不做 CSRF 防护**：前面加自己的登录中间件；用 Cookie 登录的话加 CSRF token 或 SameSite。回收 / 归档目录不能被 HTTP 访问到，默认的 `dataDir` 在 `dir` 上两级（按上面的布局就是项目根目录），请核对你的静态根目录。
 
 ### 注意
 
@@ -164,12 +168,16 @@ Call **`remount()`** after you rebuild the scroller's content (`innerHTML = ""`)
 
 ```js
 const stickerRouter = require("sticker-mask/server/express-router");
-app.use("/api/stickers", stickerRouter({ dir: path.join(__dirname, "public/stickers") }));
+app.use("/api/stickers", requireLogin, stickerRouter({
+  dir: path.join(__dirname, "public/stickers"),       // images + list.json, served statically
+  dataDir: path.join(__dirname, "sticker-mask-data"), // trash + archive, outside the static root
+}));
 ```
 
-- Upload: trim transparent edges → longest side 800 → webp q85, **always under a new file name** (replacing an image under the same name gets stuck in browser / Service Worker caches).
-- Delete moves the file to a trash folder; every change to `list.json` is archived first.
-- The router does **no authentication** — put your own middleware in front.
+- Upload: trim transparent edges → longest side 800 → webp q85, saved under a random name with exclusive create — **always a new file** (replacing an image under the same name gets stuck in browser / Service Worker caches). Decoded pixels are capped at 40 MP (`maxPixels`).
+- Delete moves the file to the trash folder; every change to `list.json` is archived first. A `list.json` that exists but cannot be parsed makes writes fail (500) instead of being treated as empty and overwritten.
+- Writes are serialised within the process and the list is re-read right before each write, so a slow upload never overwrites a change made meanwhile. Run one instance per `list.json`.
+- The router does **no authentication and no CSRF protection**: put your own login middleware in front, and add a CSRF token or SameSite cookies if you authenticate with cookies. The trash / archive folders must not be reachable over HTTP — the default `dataDir` is two levels above `dir` (the project root in the layout above); check it against your static root.
 
 ### Notes
 

@@ -163,6 +163,10 @@
     var nextId = 1;
     var side = null;
     var palette = null;
+    var destroyed = false;
+    var enterSeq = 0; // enter() is async; a stale completion (after exit()/destroy()) must not reopen the column
+    var openModals = new Set(); // dialogs live on document.body; destroy() closes them
+    var activeGestures = new Set(); // "end now" callbacks of gestures in progress; destroy() runs them
 
     scroller.classList.add("sm-scroller");
     if (getComputedStyle(scroller).position === "static") scroller.style.position = "relative";
@@ -490,7 +494,9 @@
         document.removeEventListener("pointercancel", onUp);
         scroller.classList.remove("sm-holding");
         node.classList.remove("sm-held");
+        activeGestures.delete(forceEnd);
       };
+      var forceEnd = function () { ptrs.clear(); start = null; teardown(); };
       var onUp = function (e) {
         if (!ptrs.has(e.pointerId)) return;
         ptrs.delete(e.pointerId);
@@ -525,6 +531,7 @@
         rebase();
         scroller.classList.add("sm-holding");
         node.classList.add("sm-held");
+        activeGestures.add(forceEnd);
         document.addEventListener("pointerdown", onSecondDown, true);
         document.addEventListener("pointermove", onMove);
         document.addEventListener("pointerup", onUp);
@@ -545,8 +552,9 @@
         }
       };
       var hUp = function (e) {
-        if (!hStart || e.pointerId !== hStart.id) return;
+        if (!hStart || (e && e.pointerId !== hStart.id)) return; // called without an event = forced end (destroy)
         hStart = null;
+        activeGestures.delete(hUp);
         document.removeEventListener("pointermove", hMove);
         document.removeEventListener("pointerup", hUp);
         document.removeEventListener("pointercancel", hUp);
@@ -563,6 +571,7 @@
         var vx = e.clientX - c.x, vy = e.clientY - c.y;
         hStart = { id: e.pointerId, c: c, v0: { len: Math.hypot(vx, vy), ang: Math.atan2(vy, vx) }, w: st.w, h: st.h, r: st.r };
         scroller.classList.add("sm-holding");
+        activeGestures.add(hUp);
         document.addEventListener("pointermove", hMove);
         document.addEventListener("pointerup", hUp);
         document.addEventListener("pointercancel", hUp);
@@ -584,8 +593,9 @@
         applyStyle(st);
       };
       var sUp = function (e) {
-        if (!sStart || e.pointerId !== sStart.id) return;
+        if (!sStart || (e && e.pointerId !== sStart.id)) return;
         sStart = null;
+        activeGestures.delete(sUp);
         document.removeEventListener("pointermove", sMove);
         document.removeEventListener("pointerup", sUp);
         document.removeEventListener("pointercancel", sUp);
@@ -604,6 +614,7 @@
           var uy = axis === "x" ? Math.sin(st.r) : Math.cos(st.r);
           sStart = { id: e.pointerId, axis: axis, ux: ux, uy: uy, x0: e.clientX, y0: e.clientY, w: st.w, h: st.h, cx: st.cx, cy: st.cy };
           scroller.classList.add("sm-holding");
+          activeGestures.add(sUp);
           document.addEventListener("pointermove", sMove);
           document.addEventListener("pointerup", sUp);
           document.addEventListener("pointercancel", sUp);
@@ -651,13 +662,15 @@
     }
 
     function enter() {
-      if (editing) return Promise.resolve();
+      if (editing || destroyed) return Promise.resolve();
       editing = true;
+      var seq = ++enterSeq;
       ensureLayers();
       if (!side) buildSide();
       host.classList.add("sm-editing");
       if (opts.onEnter) opts.onEnter();
       return loadAssets().then(function () {
+        if (!editing || destroyed || seq !== enterSeq) return; // exited (or destroyed) while the list was loading
         renderPalette();
         placeSide();
         side.hidden = false;
@@ -677,6 +690,9 @@
     function modal(cls, inner) {
       var m = el("div", "sm-modal-mask " + (cls || ""));
       m.innerHTML = '<div class="sm-modal"><button type="button" class="sm-modal-close" aria-label="close">×</button>' + inner + "</div>";
+      var remove = m.remove.bind(m);
+      m.remove = function () { openModals.delete(m); remove(); };
+      openModals.add(m);
       m.addEventListener("click", function (e) { if (e.target === m) m.remove(); });
       m.querySelector(".sm-modal-close").addEventListener("click", function () { m.remove(); });
       document.body.appendChild(m);
@@ -727,7 +743,7 @@
     function openManager() {
       if (!api) return;
       return loadAssets(true).then(function () {
-        var ALL = T.tabAll;
+        var ALL = null; // internal marker for the "all" tab — never the display text, which a category could be named
         var m = modal("sm-manager-mask",
           '<div class="sm-modal-title"></div><div class="sm-count"></div><div class="sm-tabs"></div><div class="sm-grid"></div>' +
           '<div class="sm-actions">' +
@@ -782,9 +798,9 @@
         var renderTabs = function () {
           tabs.innerHTML = "";
           [ALL].concat(cats).forEach(function (name) {
-            var b = el("button", "sm-tab" + (name === tab ? " sm-active" : ""), { type: "button" });
-            b.textContent = name;
-            b.dataset.cat = name;
+            var b = el("button", "sm-tab" + (name === tab ? " sm-active" : "") + (name === ALL ? " sm-tab-all" : ""), { type: "button" });
+            b.textContent = name === ALL ? T.tabAll : name;
+            if (name !== ALL) b.dataset.cat = name;
             b.addEventListener("click", function () { tab = name; sel.clear(); render(); });
             tabs.appendChild(b);
           });
@@ -908,6 +924,13 @@
     }
 
     function destroy() {
+      if (destroyed) return;
+      destroyed = true;
+      Array.from(activeGestures).forEach(function (end) { try { end(); } catch (_) {} });
+      Array.from(openModals).forEach(function (m) { m.remove(); });
+      freePtrs.clear();
+      freeStart = null;
+      freeDrag = null;
       exit();
       clear();
       document.removeEventListener("pointerdown", onDocDownExit, true);
