@@ -1,0 +1,515 @@
+/* sticker-mask — styles. Override the variables on :root or on your host element. */
+:root {
+  --sm-accent: #c8956c;
+  --sm-on-accent: #fff;
+  --sm-bg: #fffaf3;
+  --sm-bg-input: #fff6ec;
+  --sm-border: #e6d5c3;
+  --sm-text: #3a2f26;
+  --sm-text-muted: #9a8878;
+  --sm-danger: #b5443c;
+  --sm-radius: 12px;
+  --sm-font: inherit;
+}
+
+/* ── layers ───────────────────────────────────────────────────────────── */
+.sm-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.sm-layer-top { z-index: 101; }
+.sm-layer-content { z-index: 5; }
+
+/* ── sticker ──────────────────────────────────────────────────────────── */
+.sm-sticker {
+  position: absolute;
+  pointer-events: none; /* after Done the stickers are a pure overlay: the page scrolls through them */
+  /* no touch-action here: a non-auto touch-action inside a scroller makes iOS scroll on the main thread; set only while editing */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transform-origin: center center;
+  will-change: transform; /* own compositing layer: without it iOS flickers, draws stickers behind bubbles and leaves ghost handles while scrolling */
+}
+.sm-sticker img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.14));
+}
+.sm-editing .sm-sticker { pointer-events: auto; touch-action: pan-y; } /* unselected while editing: a swipe scrolls, a tap selects */
+.sm-editing .sm-sticker.sm-selected { touch-action: none; }
+/* dashed outline while editing, solid + handles when selected; nothing once you tap Done */
+.sm-editing .sm-sticker::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 1px dashed color-mix(in srgb, var(--sm-accent) 55%, transparent);
+  border-radius: 10px;
+  pointer-events: none;
+}
+.sm-editing .sm-sticker.sm-selected::after {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--sm-accent) 90%, transparent);
+}
+.sm-handle,
+.sm-del,
+.sm-stretch {
+  display: none;
+  box-sizing: border-box;
+  position: absolute;
+  pointer-events: auto;
+  touch-action: none;
+  z-index: 1;
+}
+.sm-handle {
+  right: -13px;
+  bottom: -13px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--sm-accent);
+  border: 1.2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  cursor: grab;
+}
+.sm-handle::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27white%27 stroke-width=%271.6%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27><path d=%27M20 12a8 8 0 1 1-2.3-5.7%27/><path d=%27M20 3v5h-5%27/></svg>") center / contain no-repeat;
+}
+.sm-del {
+  right: -13px;
+  top: -13px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1.2px solid var(--sm-accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+.sm-del::before,
+.sm-del::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 1.2px;
+  margin: -0.6px 0 0 -4px;
+  background: var(--sm-accent);
+  border-radius: 1px;
+  transform: rotate(45deg);
+}
+.sm-del::after { transform: rotate(-45deg); }
+/* edge handles: thin pills centred on the selection frame; a big invisible hit area around them */
+.sm-stretch {
+  border-radius: 3px;
+  background: var(--sm-accent);
+  border: 1px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+.sm-stretch::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+}
+.sm-stretch-x {
+  right: -6.5px;
+  top: 50%;
+  width: 5px;
+  height: 16px;
+  margin-top: -8px;
+  cursor: ew-resize;
+}
+.sm-stretch-y {
+  bottom: -6.5px;
+  left: 50%;
+  width: 16px;
+  height: 5px;
+  margin-left: -8px;
+  cursor: ns-resize;
+}
+.sm-editing .sm-sticker.sm-selected .sm-handle,
+.sm-editing .sm-sticker.sm-selected .sm-del,
+.sm-editing .sm-sticker.sm-selected .sm-stretch { display: block; }
+.sm-editing .sm-sticker.sm-selected.sm-no-sx .sm-stretch-x,
+.sm-editing .sm-sticker.sm-selected.sm-no-sy .sm-stretch-y { display: none; }
+
+/* scroll behaviour: pan only while editing (so a two-finger pinch is ours), nothing while a
+   sticker is selected (one finger drags it), nothing while a sticker is held */
+.sm-editing .sm-scroller { touch-action: pan-y; }
+.sm-has-selected .sm-scroller { touch-action: none; }
+.sm-scroller.sm-holding { touch-action: none; }
+
+/* ── side column ──────────────────────────────────────────────────────── */
+.sm-side {
+  position: absolute;
+  right: 8px;
+  top: 60px;
+  width: 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 7px;
+  box-sizing: border-box;
+  background: color-mix(in srgb, var(--sm-bg) 72%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--sm-border);
+  border-radius: 18px;
+  box-shadow: 0 4px 16px rgba(90, 74, 58, 0.16);
+  z-index: 102;
+  touch-action: pan-y;
+  font-family: var(--sm-font);
+}
+.sm-side[hidden] { display: none; }
+.sm-palette {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.sm-palette::-webkit-scrollbar { display: none; }
+.sm-pal-item {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--sm-radius);
+  border: 1px solid var(--sm-border);
+  background: var(--sm-bg-input);
+  padding: 4px;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.sm-pal-item:active { transform: scale(0.9); }
+.sm-pal-item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.sm-empty {
+  align-self: center;
+  font-size: 12px;
+  color: var(--sm-text-muted);
+}
+.sm-side-actions {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sm-btn {
+  width: 44px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid var(--sm-border);
+  background: var(--sm-bg-input);
+  color: var(--sm-text);
+  font-family: inherit;
+  font-size: 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.sm-btn.sm-primary {
+  background: var(--sm-accent);
+  border-color: var(--sm-accent);
+  color: var(--sm-on-accent);
+}
+.sm-btn.sm-settings { color: var(--sm-text-muted); }
+.sm-btn.sm-settings svg { width: 17px; height: 17px; display: block; }
+.sm-btn.sm-extra[aria-pressed="true"] { border-color: var(--sm-accent); color: var(--sm-accent); }
+
+/* ── dialogs ──────────────────────────────────────────────────────────── */
+.sm-modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(60, 50, 40, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  font-family: var(--sm-font);
+}
+.sm-modal {
+  position: relative;
+  background: var(--sm-bg);
+  color: var(--sm-text);
+  border-radius: 14px;
+  padding: 20px 22px 16px;
+  max-width: 320px;
+  width: calc(100% - 48px);
+  box-sizing: border-box;
+  box-shadow: 0 8px 28px rgba(80, 60, 40, 0.18);
+}
+.sm-modal-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--sm-text-muted);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+}
+.sm-modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.sm-modal-body {
+  font-size: 13px;
+  color: var(--sm-text-muted);
+  line-height: 1.55;
+  margin-bottom: 16px;
+}
+.sm-modal-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.sm-mbtn {
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  border: none;
+  background: var(--sm-bg-input);
+  color: var(--sm-text);
+  -webkit-tap-highlight-color: transparent;
+}
+.sm-mbtn.sm-ok {
+  background: var(--sm-accent);
+  color: var(--sm-on-accent);
+}
+.sm-mbtn:disabled { opacity: 0.45; cursor: default; }
+.sm-mbtn.sm-danger { color: var(--sm-danger); }
+.sm-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 15px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: 1px solid var(--sm-border);
+  background: var(--sm-bg-input);
+  color: var(--sm-text);
+  outline: none;
+}
+.sm-input:focus { border-color: var(--sm-accent); }
+.sm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+  margin: 4px 0 4px;
+}
+.sm-row-btn {
+  width: 100%;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--sm-text);
+  padding: 9px 10px;
+  cursor: pointer;
+}
+.sm-row-btn:active { background: var(--sm-bg-input); }
+
+/* ── manager ──────────────────────────────────────────────────────────── */
+.sm-manager-mask {
+  align-items: flex-start;
+  padding-top: max(44px, 9vh);
+  box-sizing: border-box;
+}
+.sm-manager { max-width: 360px; overflow: hidden; }
+.sm-count {
+  font-size: 12px;
+  color: var(--sm-text-muted);
+  margin: -4px 0 8px;
+}
+.sm-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -4px 10px;
+  padding: 2px 4px;
+}
+.sm-tabs::-webkit-scrollbar { display: none; }
+.sm-tab {
+  flex: 0 0 auto;
+  font-family: inherit;
+  font-size: 12.5px;
+  line-height: 1;
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--sm-border);
+  background: var(--sm-bg-input);
+  color: var(--sm-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+.sm-tab.sm-active {
+  background: var(--sm-accent);
+  border-color: var(--sm-accent);
+  color: var(--sm-on-accent);
+}
+.sm-tab.sm-tab-add {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  border-style: dashed;
+  background: transparent;
+}
+.sm-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  height: calc(min(48vh, 400px) + 20px); /* fixed, so switching tabs never resizes the dialog; the extra 20px leaves a row partly visible as a scroll hint */
+  align-content: start;
+  grid-auto-rows: max-content;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 2px;
+  margin-bottom: 12px;
+}
+.sm-grid::-webkit-scrollbar { display: none; }
+.sm-item,
+.sm-add {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.sm-item {
+  border: 1.5px solid var(--sm-border);
+  background: var(--sm-bg-input);
+  padding: 0;
+  overflow: hidden;
+}
+.sm-item img {
+  position: absolute;
+  left: 5px;
+  top: 5px;
+  width: calc(100% - 10px);
+  height: calc(100% - 10px);
+  object-fit: contain;
+  pointer-events: none;
+}
+.sm-item.sm-picked { border-color: var(--sm-accent); box-shadow: 0 0 0 1px var(--sm-accent) inset; }
+.sm-item.sm-off img { opacity: 0.35; }
+.sm-item.sm-off::after {
+  content: attr(data-off);
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--sm-text-muted);
+}
+.sm-add {
+  border: 1.5px dashed var(--sm-border);
+  background: transparent;
+  color: var(--sm-text-muted);
+  font-size: 24px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sm-add:active { background: var(--sm-bg-input); }
+.sm-add.sm-busy { cursor: default; opacity: 0.6; }
+.sm-grid-empty {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: var(--sm-text-muted);
+  padding: 18px 12px;
+  text-align: center;
+  line-height: 1.6;
+}
+.sm-actions {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sm-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.sm-row .sm-spacer { flex: 1 1 auto; }
+.sm-row .sm-mbtn {
+  flex: 0 0 auto;
+  height: 36px;
+  padding: 0 10px;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+.sm-row .sm-mbtn[hidden] { display: none; }
+.sm-toast {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 6px);
+  padding: 7px 10px;
+  border-radius: 9px;
+  background: var(--sm-accent);
+  color: var(--sm-on-accent);
+  font-size: 12.5px;
+  line-height: 1.4;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.18s, transform 0.18s;
+  pointer-events: none;
+  z-index: 2;
+}
+.sm-toast.sm-show { opacity: 1; transform: none; }

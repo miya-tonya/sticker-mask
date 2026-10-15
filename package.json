@@ -1,0 +1,40 @@
+{
+  "name": "sticker-mask",
+  "version": "0.1.0",
+  "description": "Drop stickers over the parts of a page you want hidden before taking a screenshot. Touch-first, zero dependencies.",
+  "main": "src/sticker-mask.js",
+  "style": "src/sticker-mask.css",
+  "files": [
+    "src",
+    "server",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node test/run.cjs"
+  },
+  "keywords": [
+    "sticker",
+    "mask",
+    "redact",
+    "screenshot",
+    "privacy",
+    "touch",
+    "ios",
+    "pwa"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "express": ">=4",
+    "multer": ">=1",
+    "sharp": ">=0.30"
+  },
+  "peerDependenciesMeta": {
+    "express": { "optional": true },
+    "multer": { "optional": true },
+    "sharp": { "optional": true }
+  },
+  "devDependencies": {
+    "playwright": "^1.45.0"
+  }
+}

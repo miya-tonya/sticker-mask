@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>sticker-mask demo</title>
+  <link rel="stylesheet" href="../src/sticker-mask.css">
+  <style>
+    :root { --sm-accent: #c8956c; }
+    html, body { margin: 0; height: 100%; background: #f6efe6; color: #3a2f26; font-family: -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans", sans-serif; }
+    .app { position: relative; height: 100%; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; background: #fbf6ef; }
+    .topbar { position: relative; z-index: 100; height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 14px; border-bottom: 1px solid #eadfd2; background: #fbf6ef; }
+    .topbar .title { font-weight: 600; font-size: 16px; }
+    .topbar .sub { font-size: 12px; color: #9a8878; }
+    .messages { flex: 1; overflow-y: auto; padding: 14px; -webkit-overflow-scrolling: touch; }
+    .msg { max-width: 78%; padding: 10px 14px; border-radius: 16px; margin: 8px 0; font-size: 15px; line-height: 1.5; }
+    .msg.me { margin-left: auto; background: #f1d7dc; }
+    .msg.them { background: #fff; border: 1px solid #eadfd2; }
+    .time { font-size: 11px; color: #9a8878; margin: -2px 0 6px 4px; }
+    .composer { display: flex; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid #eadfd2; background: #fbf6ef; }
+    .composer input { flex: 1; border: 1px solid #eadfd2; border-radius: 999px; padding: 10px 14px; font-size: 15px; background: #fff; }
+    .composer button { border: 1px solid #eadfd2; background: #fff; border-radius: 999px; padding: 0 14px; font-size: 14px; cursor: pointer; }
+    .composer button.accent { background: #c8956c; border-color: #c8956c; color: #fff; }
+    .hint { position: absolute; left: 12px; bottom: 76px; font-size: 12px; color: #9a8878; background: rgba(255,255,255,.8); padding: 6px 10px; border-radius: 10px; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <div class="topbar">
+      <div>
+        <div class="title" id="title">Alex</div>
+        <div class="sub">demo · 12 messages</div>
+      </div>
+    </div>
+    <div class="messages" id="messages">
+      <div class="msg them">Hey, did the transfer go through?</div>
+      <div class="time">09:12</div>
+      <div class="msg me">Yes. Reference 4821-9930-1177, from account ending 2291.</div>
+      <div class="time">09:13</div>
+      <div class="msg them">Perfect. And the address for the parcel?</div>
+      <div class="time">09:13</div>
+      <div class="msg me">3-1-1 Example Street, Example City. Phone 090-1234-5678.</div>
+      <div class="time">09:14</div>
+      <div class="msg them">Got it, sending today.</div>
+      <div class="time">09:15</div>
+      <div class="msg me">Thanks! Dinner tonight?</div>
+      <div class="time">09:15</div>
+      <div class="msg them">Curry? There are potatoes and carrots left.</div>
+      <div class="time">09:16</div>
+      <div class="msg me">Deal.</div>
+      <div class="time">09:16</div>
+      <div class="msg them">Also, my new email is alex.example@example.com — update your contacts.</div>
+      <div class="time">09:20</div>
+      <div class="msg me">Done. Screenshotting this for the group, hiding the numbers first.</div>
+      <div class="time">09:21</div>
+      <div class="msg them">Good call.</div>
+      <div class="time">09:21</div>
+      <div class="msg me">Scroll down a bit — stickers dropped on messages scroll with them, stickers dropped on the top bar stay pinned.</div>
+      <div class="time">09:22</div>
+    </div>
+    <div class="composer">
+      <input type="text" placeholder="Message…" id="input">
+      <button type="button" id="clearBtn" hidden>Clear</button>
+      <button type="button" class="accent" id="maskBtn">Mask</button>
+    </div>
+    <div class="hint" id="hint" hidden></div>
+  </div>
+
+  <script src="../src/sticker-mask.js"></script>
+  <script>
+    // The demo works straight from the file system: the sticker list is inlined and the four
+    // manager endpoints are faked in memory below (changes are lost on reload; added images are
+    // kept as object URLs). Pass ?api=1 to talk to a real server instead (see server/express-router.js).
+    var withApi = /[?&]api=1/.test(location.search);
+    var API = { upload: "/api/stickers/upload", update: "/api/stickers/update", delete: "/api/stickers/delete", cats: "/api/stickers/cats" };
+    var demoList = {
+      cats: ["Tape", "Star"],
+      items: [
+        { src: "stickers/tape-pink.webp", cat: "Tape" },
+        { src: "stickers/tape-blue.webp", cat: "Tape" },
+        { src: "stickers/star-pink.webp", cat: "Star" },
+        { src: "stickers/star-blue.webp", cat: "Star" },
+      ],
+    };
+    if (!withApi) {
+      var realFetch = window.fetch.bind(window);
+      var reply = function (status, data) { return Promise.resolve(new Response(JSON.stringify(data), { status: status, headers: { "Content-Type": "application/json" } })); };
+      var ok = function () { return reply(200, { ok: true, cats: demoList.cats.slice(), items: demoList.items.map(function (x) { return Object.assign({}, x); }) }); };
+      window.fetch = function (url, init) {
+        var u = String(url);
+        if (u.indexOf("/api/stickers/") < 0) return realFetch(url, init);
+        var body = {};
+        if (init && typeof init.body === "string") { try { body = JSON.parse(init.body); } catch (_) {} }
+        if (u.indexOf("/update") >= 0) {
+          var it = demoList.items.filter(function (x) { return x.src === body.src; })[0];
+          if (!it) return reply(404, { error: "not in list" });
+          if (body.hidden !== undefined) { if (body.hidden) it.hidden = true; else delete it.hidden; }
+          if (body.cat !== undefined) { if (body.cat) it.cat = body.cat; else delete it.cat; }
+          return ok();
+        }
+        if (u.indexOf("/delete") >= 0) { demoList.items = demoList.items.filter(function (x) { return x.src !== body.src; }); return ok(); }
+        if (u.indexOf("/cats") >= 0) {
+          if (body.remove) { demoList.cats = demoList.cats.filter(function (c) { return c !== body.remove; }); demoList.items.forEach(function (x) { if (x.cat === body.remove) delete x.cat; }); return ok(); }
+          if (!body.add) return reply(400, { error: "empty name" });
+          if (demoList.cats.indexOf(body.add) >= 0) return reply(409, { error: "exists" });
+          demoList.cats.push(body.add);
+          return ok();
+        }
+        if (u.indexOf("/upload") >= 0 && init && init.body && init.body.getAll) {
+          var cat = init.body.get("cat") || "";
+          init.body.getAll("images").forEach(function (f) { var item = { src: URL.createObjectURL(f) }; if (cat) item.cat = cat; demoList.items.push(item); });
+          return ok();
+        }
+        return reply(404, { error: "unknown" });
+      };
+    }
+    var nameHidden = false;
+    var titleEl = document.getElementById("title");
+    var mask = StickerMask.create({
+      scroller: document.getElementById("messages"),
+      host: document.getElementById("app"),
+      assets: withApi ? undefined : demoList,
+      listUrl: withApi ? "stickers/list.json" : undefined,
+      defaultCats: ["Tape", "Star"],
+      api: API,
+      sideTop: function () { return document.querySelector(".topbar").offsetHeight + 8; },
+      sideBottom: function () { return document.querySelector(".composer").offsetHeight + 8; },
+      texts: /[?&]lang=en/.test(location.search) ? StickerMask.texts.en : {},
+      // An extra button above "Done". Here it swaps the header name for a placeholder —
+      // the kind of app-specific toggle you may want next to the palette.
+      extraButtons: [{
+        label: "Name",
+        title: "Hide the name in the header",
+        pressed: function () { return nameHidden; },
+        onClick: function () { nameHidden = !nameHidden; titleEl.textContent = nameHidden ? "A." : "Alex"; },
+      }],
+      onChange: function (n) { document.getElementById("clearBtn").hidden = n === 0; },
+      onEnter: function () { document.getElementById("input").blur(); },
+    });
+    document.getElementById("maskBtn").addEventListener("click", function () { mask.enter(); });
+    document.getElementById("clearBtn").addEventListener("click", function () { mask.clear(); });
+    window.mask = mask; // for the tests
+  </script>
+</body>
+</html>
