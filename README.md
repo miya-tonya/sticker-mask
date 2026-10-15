@@ -4,7 +4,7 @@
 
 Drop stickers over the parts of a page you want hidden, then take a normal screenshot. Touch-first (built for iOS Safari / PWA), works with a mouse too. No dependencies.
 
-**[Demo](demo/index.html)** · 中文在上，English below.
+**[Demo](https://miya-tonya.github.io/sticker-mask/demo/)**（手机上打开试试 / open it on your phone） · 中文在上，English below.
 
 ---
 
