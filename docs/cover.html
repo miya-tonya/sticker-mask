@@ -5,34 +5,34 @@
 <title>sticker-mask cover</title>
 <style>
   html, body { margin: 0; }
-  body { width: 1200px; height: 630px; overflow: hidden; background: #fbf6ef; font-family: "Segoe UI", "PingFang SC", "Hiragino Sans", "Microsoft YaHei", -apple-system, sans-serif; color: #3a2f26; position: relative; }
+  body { width: 1200px; height: 630px; overflow: hidden; background: #eef1e8; font-family: "Segoe UI", "PingFang SC", "Hiragino Sans", "Microsoft YaHei", -apple-system, sans-serif; color: #3a2f26; position: relative; }
   /* soft paper texture: two faint radial washes */
-  .wash { position: absolute; inset: 0; background:
-    radial-gradient(900px 500px at 15% 20%, rgba(241, 215, 220, 0.55), transparent 60%),
-    radial-gradient(700px 420px at 95% 90%, rgba(200, 149, 108, 0.18), transparent 60%); }
+  /* sage paper with a faint dot grid */
+  .wash { position: absolute; inset: 0; background-image: radial-gradient(rgba(47, 90, 84, 0.16) 1.2px, transparent 1.3px); background-size: 22px 22px; background-position: 11px 11px; }
+  .wash::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(238,241,232,0) 55%, rgba(222,229,214,0.7) 100%); }
   .left { position: absolute; left: 84px; top: 118px; width: 560px; }
-  .kicker { font-size: 17px; letter-spacing: 0.22em; color: #9a8878; text-transform: uppercase; }
-  h1 { margin: 14px 0 0; font-size: 92px; line-height: 1; font-weight: 700; letter-spacing: -0.02em; color: #c8956c; }
-  h1 span { color: #3a2f26; }
-  .zh { margin-top: 26px; font-size: 32px; font-weight: 600; line-height: 1.35; }
-  .en { margin-top: 10px; font-size: 21px; line-height: 1.5; color: #7a685a; }
-  .url { position: absolute; left: 84px; bottom: 56px; font-size: 19px; color: #9a8878; letter-spacing: 0.02em; }
-  .url b { color: #c8956c; font-weight: 600; }
+  .kicker { font-size: 17px; letter-spacing: 0.22em; color: #6f8279; text-transform: uppercase; }
+  h1 { margin: 14px 0 0; font-size: 92px; line-height: 1; font-weight: 700; letter-spacing: -0.02em; color: #2f6b64; }
+  h1 span { color: #e0788c; }
+  .zh { margin-top: 26px; font-size: 32px; font-weight: 600; line-height: 1.35; color: #2b3330; }
+  .en { margin-top: 10px; font-size: 21px; line-height: 1.5; color: #5f6d68; }
+  .url { position: absolute; left: 84px; bottom: 56px; font-size: 19px; color: #6f8279; letter-spacing: 0.02em; }
+  .url b { color: #2f6b64; font-weight: 600; }
   /* chat card */
-  .card { position: absolute; right: 84px; top: 96px; width: 400px; height: 438px; background: #fffdf9; border-radius: 28px; box-shadow: 0 24px 60px rgba(90, 74, 58, 0.18), 0 2px 0 rgba(255,255,255,0.8) inset; transform: rotate(-2.5deg); overflow: hidden; }
-  .bar { height: 54px; display: flex; align-items: center; gap: 12px; padding: 0 20px; border-bottom: 1px solid #eadfd2; }
-  .avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #f1c7d0, #c8956c); }
+  .card { position: absolute; right: 84px; top: 96px; width: 400px; height: 438px; background: #ffffff; border-radius: 28px; box-shadow: 0 24px 60px rgba(47, 90, 84, 0.22), 0 2px 0 rgba(255,255,255,0.8) inset; transform: rotate(-2.5deg); overflow: hidden; }
+  .bar { height: 54px; display: flex; align-items: center; gap: 12px; padding: 0 20px; border-bottom: 1px solid #e3e8df; }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #bfd8d0, #2f6b64); }
   .name { font-size: 16px; font-weight: 600; }
   .msgs { padding: 18px 18px 0; }
   .msg { max-width: 82%; padding: 11px 15px; border-radius: 17px; margin: 9px 0; font-size: 16px; line-height: 1.45; position: relative; }
-  .them { background: #fff; border: 1px solid #eadfd2; }
-  .me { margin-left: auto; background: #f1d7dc; }
-  .time { font-size: 11px; color: #9a8878; margin: -2px 0 2px 4px; }
+  .them { background: #f3f6f1; border: 1px solid #e3e8df; }
+  .me { margin-left: auto; background: #dcebe4; }
+  .time { font-size: 11px; color: #8a978f; margin: -2px 0 2px 4px; }
   /* stickers on the card */
   .st { position: absolute; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.16)); }
-  .st.sel::after { content: ""; position: absolute; inset: -6px; border: 1.5px solid rgba(200,149,108,0.9); border-radius: 10px; }
-  .dot { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #c8956c; border: 1.5px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.25); }
-  .x { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 1.5px solid #c8956c; box-shadow: 0 1px 4px rgba(0,0,0,0.2); font: 700 12px/15px "Segoe UI", sans-serif; color: #c8956c; text-align: center; }
+  .st.sel::after { content: ""; position: absolute; inset: -6px; border: 1.5px solid rgba(47,107,100,0.9); border-radius: 10px; }
+  .dot { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #2f6b64; border: 1.5px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.25); }
+  .x { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 1.5px solid #2f6b64; box-shadow: 0 1px 4px rgba(0,0,0,0.2); font: 700 12px/15px "Segoe UI", sans-serif; color: #2f6b64; text-align: center; }
   /* decorative tapes */
   .deco { position: absolute; opacity: 0.9; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.12)); }
 </style>
