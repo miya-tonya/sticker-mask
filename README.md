@@ -6,6 +6,10 @@ Drop stickers over the parts of a page you want hidden, then take a normal scree
 
 **[Demo](https://miya-tonya.github.io/sticker-mask/demo/)**（手机上打开试试 / open it on your phone） · 中文在上，English below.
 
+<img src="docs/demo.png" alt="sticker-mask demo: a tape sticker over a reference number and a star over a phone number, with the sticker palette on the right" width="320">
+
+贴纸素材请自行添加（演示里的胶带和星星是 AI 生成的）。Bring your own stickers — the tape and stars in the demo are AI-generated.
+
 ---
 
 ## 中文

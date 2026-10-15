@@ -24,6 +24,12 @@
     "pwa"
   ],
   "license": "MIT",
+  "author": "Miya",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/miya-tonya/sticker-mask.git"
+  },
+  "homepage": "https://miya-tonya.github.io/sticker-mask/demo/",
   "peerDependencies": {
     "express": ">=4",
     "multer": ">=1",

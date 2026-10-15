@@ -1,5 +1,7 @@
 node_modules/
 test/shots/
 *.log
+.env
+.env.*
 .DS_Store
 Thumbs.db
